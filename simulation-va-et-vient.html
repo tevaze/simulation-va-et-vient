@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Éclairage Va-et-Vient</title>
+    <style>
+        :root {
+            --bg-color: #1a1e29;
+            --panel-color: #262c3d;
+            --accent-off: #4a5568;
+            --accent-on: #38a169;
+            --lamp-off: #333948;
+            --lamp-on: #ffeaa7;
+            --lamp-glow: #fdcb6e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.8rem;
+        }
+
+        p.subtitle {
+            color: #a0aec0;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        /* Masquage des cases à cocher réelles */
+        .switch-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Conteneur principal du circuit */
+        .circuit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            background-color: var(--panel-color);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            flex-wrap: wrap;
+        }
+
+        /* Style des interrupteurs */
+        .switch-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .switch-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .switch-lever {
+            width: 70px;
+            height: 120px;
+            background: #1e222d;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+            border: 2px solid #3b4253;
+        }
+
+        .switch-lever::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 50px;
+            height: 50px;
+            background: var(--accent-off);
+            border-radius: 8px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* État visuel de l'interrupteur A activé */
+        #switchA:checked ~ .circuit label[for="switchA"] .switch-lever::after {
+            top: 60px;
+            background: var(--accent-on);
+        }
+
+        /* État visuel de l'interrupteur B activé */
+        #switchB:checked ~ .circuit label[for="switchB"] .switch-lever::after {
+            top: 60px;
+            background: var(--accent-on);
+        }
+
+        /* Style de l'ampoule */
+        .lamp-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .lamp {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background-color: var(--lamp-off);
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            border: 2px solid #485460;
+        }
+
+        .lamp::before {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 15px;
+            background: #718096;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .status-text {
+            font-weight: 500;
+            color: #e2e8f0;
+        }
+
+        /* ========================================================
+           LOGIQUE VA-ET-VIENT (XOR) EN CSS PUR :
+           Cas 1: A coché ET B non coché
+           Cas 2: A non coché ET B coché
+           ======================================================== */
+        #switchA:checked ~ #switchB:not(:checked) ~ .circuit .lamp,
+        #switchA:not(:checked) ~ #switchB:checked ~ .circuit .lamp {
+            background-color: var(--lamp-on);
+            box-shadow: 0 0 35px var(--lamp-glow), 0 0 70px var(--lamp-glow);
+            border-color: #fff;
+        }
+
+        /* Texte indicateur dynamique */
+        .status-text::after {
+            content: 'ÉTEINTE';
+            color: #e53e3e;
+            font-weight: bold;
+        }
+
+        #switchA:checked ~ #switchB:not(:checked) ~ .circuit .status-text::after,
+        #switchA:not(:checked) ~ #switchB:checked ~ .circuit .status-text::after {
+            content: 'ALLUMÉE';
+            color: #48bb78;
+        }
+
+        /* Tableau récapitulatif */
+        .truth-table {
+            margin-top: 40px;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .truth-table th, .truth-table td {
+            border: 1px solid #4a5568;
+            padding: 8px 16px;
+        }
+
+        .truth-table th {
+            background-color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Simulation Éclairage Va-et-Vient</h1>
+    <p class="subtitle">Cliquez sur les interrupteurs pour changer leur position</p>
+
+    <!-- Les entrées doivent être au même niveau pour que le CSS puisse les lier -->
+    <input type="checkbox" id="switchA" class="switch-input">
+    <input type="checkbox" id="switchB" class="switch-input">
+
+    <div class="circuit">
+        <!-- Interrupteur A -->
+        <label for="switchA" class="switch-box">
+            <span class="switch-title">Interrupteur A</span>
+            <div class="switch-lever"></div>
+        </label>
+
+        <!-- Ampoule L -->
+        <div class="lamp-container">
+            <div class="lamp"></div>
+            <span class="status-text">Lampe L : </span>
+        </div>
+
+        <!-- Interrupteur B -->
+        <label for="switchB" class="switch-box">
+            <span class="switch-title">Interrupteur B</span>
+            <div class="switch-lever"></div>
+        </label>
+    </div>
+
+    <!-- Table de vérité pour référence -->
+    <table class="truth-table">
+        <thead>
+            <tr>
+                <th>Switch A</th>
+                <th>Switch B</th>
+                <th>Lampe L</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>0 (Haut)</td><td>0 (Haut)</td><td>Éteinte</td></tr>
+            <tr><td>1 (Bas)</td><td>0 (Haut)</td><td><strong>Allumée</strong></td></tr>
+            <tr><td>0 (Haut)</td><td>1 (Bas)</td><td><strong>Allumée</strong></td></tr>
+            <tr><td>1 (Bas)</td><td>1 (Bas)</td><td>Éteinte</td></tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
